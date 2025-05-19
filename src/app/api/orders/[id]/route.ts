@@ -2,21 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '~/server/db/mongodb';
 import Order from '~/server/models/order';
 import { isAdminAuthenticated } from '~/server/utils/adminAuth';
-import mongoose from 'mongoose';
 
-// The Params type is built into Next.js, so we don't need a custom interface
-type Params = {
-  params: {
-    id: string;
-  }
-};
+// We don't need to define our own params type for Next.js route handlers
 
 // Handler for GET /api/orders/[id]
-export async function GET(req: NextRequest, context: Params) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     await dbConnect();
     // Use a type assertion to work around type incompatibility
-const order = await (Order as any).findById(context.params.id).populate('product');
+const order = await (Order as any).findById(params.id).populate('product');
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -36,7 +33,10 @@ const order = await (Order as any).findById(context.params.id).populate('product
 }
 
 // Handler for PUT /api/orders/[id] (Update order payment status)
-export async function PUT(req: NextRequest, context: Params) {
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     await dbConnect();
     const data = await req.json();
@@ -48,7 +48,7 @@ export async function PUT(req: NextRequest, context: Params) {
 
     // Use a type assertion to work around type incompatibility
 const order = await (Order as any).findByIdAndUpdate(
-      context.params.id,
+      params.id,
       {
         paymentId: data.paymentId,
         isPaid: true
@@ -71,7 +71,10 @@ const order = await (Order as any).findByIdAndUpdate(
 }
 
 // Handler for DELETE /api/orders/[id] (Admin only)
-export async function DELETE(req: NextRequest, context: Params) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   // Check admin authentication
   if (!isAdminAuthenticated(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -80,7 +83,7 @@ export async function DELETE(req: NextRequest, context: Params) {
   try {
     await dbConnect();
     // Use a type assertion to work around type incompatibility
-const order = await (Order as any).findByIdAndDelete(context.params.id);
+const order = await (Order as any).findByIdAndDelete(params.id);
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
